@@ -1,6 +1,7 @@
 from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.status import HTTP_204_NO_CONTENT, HTTP_400_BAD_REQUEST
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 
 from survey.models import Condition, Operatior, Survey
 from survey.serializers.conditions import ConditionSerializer, OperatiorSerializer

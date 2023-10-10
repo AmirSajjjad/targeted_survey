@@ -3,9 +3,10 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_204_NO_CONTENT, HTTP_404_NOT_FOUND
 from django.db.models import Q, F, Count
+from drf_spectacular.utils import extend_schema
 
 from survey.models import Survey, Question, Condition, Operatior
-from survey.serializers.survey import SurveySerializer
+from survey.serializers.survey import SurveySerializer, SurveyPublishSerializer
 
 
 class SurveyViewSet(viewsets.ModelViewSet):
@@ -21,6 +22,7 @@ class SurveyViewSet(viewsets.ModelViewSet):
 
 
 class PublishSurveyApiView(APIView):
+    @extend_schema(request=None, responses=SurveyPublishSerializer)
     def get(self, request, *args, **kwargs):
         survey = Survey.objects.filter(id=self.kwargs['survey_id']).exclude(status=Survey.StatusType.publish).first()
         if not survey:
@@ -76,5 +78,5 @@ class PublishSurveyApiView(APIView):
 
         survey.status = Survey.StatusType.publish
         survey.save()
-        return Response({"message": "done"})
-
+        response = SurveyPublishSerializer({"message": "done"}).data
+        return Response(response)

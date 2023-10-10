@@ -11,7 +11,7 @@ class QuestionSerializer(serializers.ModelSerializer):
         model = Question
         exclude = ['survey']
 
-    def get_options(self, value):
+    def get_options(self, value) -> list:
         if value.question_type == Question.QuestionType.option:
             option = Option.objects.filter(question=value.id)
             op = OptionSerializer(option, many=True)

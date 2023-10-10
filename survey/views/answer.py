@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponseBadRequest
 from django.db.models import Q
+from drf_spectacular.utils import extend_schema
 
 from survey.models import Survey, Question, Answer, Condition, Option, UserAnsweredToSurvey, Operatior
 from survey.serializers.answer import NextAnswerRequestSerializer, NextPreviousAnswerResponseSerializer
@@ -135,6 +136,10 @@ class NextAnswerApiView(APIView):
     permission_classes = [IsAuthenticated]
     serializer_class = NextAnswerRequestSerializer
 
+    @extend_schema(
+        request=NextAnswerRequestSerializer,
+        responses=NextPreviousAnswerResponseSerializer
+    )
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -192,6 +197,7 @@ class NextAnswerApiView(APIView):
 
 
 class PreviousAnswerApiView(APIView):
+    @extend_schema(responses=NextPreviousAnswerResponseSerializer)
     def get(self, request, *args, **kwargs):
         survey = get_object_or_404(Survey, id=self.kwargs['survey_id'], status=Survey.StatusType.publish)
         survey_condition = Condition.objects.filter(survey=survey)

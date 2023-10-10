@@ -13,3 +13,6 @@ class SurveySerializer(serializers.ModelSerializer):
             if self.instance.status == Survey.StatusType.publish:
                 raise ValidationError("survey status is publish")
         return super().validate(attrs)
+
+class SurveyPublishSerializer(serializers.Serializer):
+    message = serializers.CharField()
