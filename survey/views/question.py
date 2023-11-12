@@ -6,6 +6,7 @@ from drf_spectacular.utils import extend_schema
 
 from survey.models import Question, Option, Survey, Condition
 from survey.serializers.question import QuestionSerializer, OptionSerializer
+from survey.translation import Translation
 
 
 class QuestionViewSet(viewsets.ModelViewSet):
@@ -17,7 +18,7 @@ class QuestionViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         if instance.survey.status == Survey.StatusType.publish:
-            return Response(status=HTTP_400_BAD_REQUEST, data="survey status is publish")
+            return Response(status=HTTP_400_BAD_REQUEST, data=Translation.survey_status_is_publish)
         instance.delete()
         return Response(status=HTTP_204_NO_CONTENT)
 
@@ -42,7 +43,7 @@ class OptionViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         if instance.question.survey.status == Survey.StatusType.publish:
-            return Response(status=HTTP_400_BAD_REQUEST, data="survey status is publish")
+            return Response(status=HTTP_400_BAD_REQUEST, data=Translation.survey_status_is_publish)
         Condition.objects.filter(source_question_id=kwargs["question_id"], value=kwargs["pk"]).delete()
         instance.delete()
         return Response(status=HTTP_204_NO_CONTENT)

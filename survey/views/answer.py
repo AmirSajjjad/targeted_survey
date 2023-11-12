@@ -9,10 +9,11 @@ from drf_spectacular.utils import extend_schema
 
 from survey.models import Survey, Question, Answer, Condition, Option, UserAnsweredToSurvey, Operatior
 from survey.serializers.answer import NextAnswerRequestSerializer, NextPreviousAnswerResponseSerializer
+from survey.translation import Translation
 
 
 class AnswerBussinesLogic:
-            
+
     @staticmethod
     def check_last_required_questions(answers, questions, target_question, survey_conditions):
         answer_ids = answers.values_list('question')
@@ -24,9 +25,9 @@ class AnswerBussinesLogic:
             conditions = survey_conditions.filter(target_question=rqwa)
             if conditions.exists():
                 if AnswerBussinesLogic.check_condition(conditions, answers):
-                    return True, "answer to required question first"
+                    return True, Translation.answer_required_question
             else:
-                return True, "answer to required question first"
+                return True, Translation.answer_required_question
         return False, None
     
     @staticmethod
@@ -85,7 +86,7 @@ class AnswerBussinesLogic:
     def check_user_answered_before(user_answer, old_answer, target_question, answers):
         if user_answer and old_answer:
             after_answer = answers.filter(question__priority__gt=target_question.priority).order_by(
-                "question__priority").values_list("question_id") #  check order ***************************************************************
+                "question__priority").values_list("question_id") #  check order *************************************
             if after_answer.exists():  # survey have answer with greater priority
                 old_answer_value = old_answer.text if old_answer.text else old_answer.option
                 if str(old_answer_value) != user_answer["answer"]:  # check answer edited
@@ -103,14 +104,14 @@ class AnswerBussinesLogic:
                 try:
                     float(user_answer)
                 except ValueError:
-                    return True, "Invalid answer"
+                    return True, Translation.invalid_answer
             elif target_question.question_type == Question.QuestionType.option:
                 try:
                     user_answer = Option.objects.get(id=user_answer, question=target_question)
                 except Option.DoesNotExist:
-                    return True, "Invalid answer"
+                    return True, Translation.invalid_answer
                 except ValueError:
-                    return True, "Invalid answer"
+                    return True, Translation.invalid_answer
                 
             # check create or update answer
             if old_answer:
@@ -127,7 +128,7 @@ class AnswerBussinesLogic:
         else:
             # check user can not skip required question without answer
             if not old_answer and target_question.required:
-                return True, "this question is required"
+                return True, Translation.this_question_required
         
         return False, None
     
@@ -156,7 +157,7 @@ class NextAnswerApiView(APIView):
 
         # check user can not change answer if before finished this survey
         if UserAnsweredToSurvey.objects.filter(survey=survey, user=request.user).exists():
-            return HttpResponseBadRequest("You are before answered to this survey")
+            return HttpResponseBadRequest(Translation.you_answered_to_survey)
         
         # check last required questions
         error, message = AnswerBussinesLogic.check_last_required_questions(answers, questions, target_question,
@@ -167,7 +168,7 @@ class NextAnswerApiView(APIView):
         # Check current Condition
         if current_question_conditions.exists():
             if not AnswerBussinesLogic.check_condition(current_question_conditions, answers):
-                return HttpResponseBadRequest("Condition Failed")
+                return HttpResponseBadRequest(Translation.condition_failed)
         
         # if user answered to this question before and now send a answer
         AnswerBussinesLogic.check_user_answered_before(user_answer, old_answer, target_question, answers)
@@ -216,4 +217,4 @@ class PreviousAnswerApiView(APIView):
                 d = {"question": previous_question, "answer": previous_answer}
                 serializer = NextPreviousAnswerResponseSerializer(d)
                 return Response(data=serializer.data, status=status.HTTP_200_OK)
-        return HttpResponseBadRequest("this is first question")
+        return HttpResponseBadRequest(Translation.firsy_question)

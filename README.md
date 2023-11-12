@@ -20,11 +20,11 @@ Targeted Survey is a Django Rest Framework project that allows users to create a
 To install and run Targeted Survey, follow these steps:
 
 1. Clone the repository to your local machine.
-2. Install the required dependencies using `pip install -r requirements.txt`.
+2. Install the required dependencies using `pip install -r requirements.txt`
 3. migrate database useing `python manage.py migrate`
-4. Run the server using `python manage.py runserver`.
+4. Run the server using `python manage.py runserver`
 
-## Tests (coming soon)
+## Tests
 
 To run tests for Targeted Survey, use the following command:
 

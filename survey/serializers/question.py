@@ -1,7 +1,8 @@
 from rest_framework import serializers
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError, NotFound
 
 from survey.models import Question, Option, Survey, Condition
+from survey.translation import Translation
 
 
 class QuestionSerializer(serializers.ModelSerializer):
@@ -20,9 +21,12 @@ class QuestionSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         survey_id = self.context['request'].parser_context["kwargs"]["survey_id"]
-        attrs["survey"] = Survey.objects.get(id=survey_id)
+        try:
+            attrs["survey"] = Survey.objects.get(id=survey_id)
+        except Survey.DoesNotExist:
+            raise NotFound()
         if attrs["survey"].status == Survey.StatusType.publish:
-            raise ValidationError("survey status is publish")
+            raise ValidationError(Translation.survey_status_is_publish)
 
         if self.instance:
             if "question_type" in attrs.keys():
@@ -43,12 +47,12 @@ class OptionSerializer(serializers.ModelSerializer):
         try:
             attrs["question"] = Question.objects.get(id=question_id)
         except Question.DoesNotExist:
-            raise serializers.ValidationError("invalid question id")
+            raise serializers.ValidationError(Translation.invalid_question_id)
         
         if attrs["question"].survey.status == Survey.StatusType.publish:
-            raise ValidationError("survey status is publish")
+            raise ValidationError(Translation.survey_status_is_publish)
             
         if attrs["question"].question_type != Question.QuestionType.option:
-            raise serializers.ValidationError("invalid question type")
+            raise serializers.ValidationError(Translation.invalid_question_type)
         
         return super().validate(attrs)

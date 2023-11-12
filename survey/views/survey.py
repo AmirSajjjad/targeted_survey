@@ -7,6 +7,7 @@ from drf_spectacular.utils import extend_schema
 
 from survey.models import Survey, Question, Condition, Operatior
 from survey.serializers.survey import SurveySerializer, SurveyPublishSerializer
+from survey.translation import Translation
 
 
 class SurveyViewSet(viewsets.ModelViewSet):
@@ -16,7 +17,7 @@ class SurveyViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         if instance.status == Survey.StatusType.publish:
-            return Response(status=HTTP_400_BAD_REQUEST, data="survey status is publish")
+            return Response(status=HTTP_400_BAD_REQUEST, data=Translation.survey_status_is_publish)
         instance.delete()
         return Response(status=HTTP_204_NO_CONTENT)
 
@@ -33,22 +34,21 @@ class PublishSurveyApiView(APIView):
 
         # check the survey have question
         if not questions.exists():
-            return Response(status=HTTP_400_BAD_REQUEST, data="this survey dont have any question")
+            return Response(status=HTTP_400_BAD_REQUEST, data=Translation.survey_dont_have_question)
         
         # check all question have unique priorities
         if questions.count() != questions.filter(priority__isnull=False).values_list("priority").distinct().count():
-            return Response(status=HTTP_400_BAD_REQUEST, data="check question priorities")
+            return Response(status=HTTP_400_BAD_REQUEST, data=Translation.unique_question_priorities)
 
         # check all question with type option, have minimum 2 option
         if questions.filter(question_type=Question.QuestionType.option).annotate(num_options=Count('option')).filter(
             num_options__lte=1).exists():
-            d = "you have some option type question that dont have minimum 2 option"
-            return Response(status=HTTP_400_BAD_REQUEST, data=d)
+
+            return Response(status=HTTP_400_BAD_REQUEST, data=Translation.question_minimum_option)
 
         # double check source question priority < target question priority (maybe question updated later):
         if conditions.filter(source_question__priority__gte=F('target_question__priority')).exists():
-            d = "check question priorities, have conflict with conditions"
-            return Response(status=HTTP_400_BAD_REQUEST, data=d)
+            return Response(status=HTTP_400_BAD_REQUEST, data=Translation.condition_question_priorities)
 
         # operation validation
         # TODO NEED OPTIMIZATION
@@ -65,7 +65,7 @@ class PublishSurveyApiView(APIView):
 
             # check operations have unique priorities
             if question_operations.count() != question_operations.values_list("priority").distinct().count():
-                return Response(status=HTTP_400_BAD_REQUEST, data="check operation priorities")
+                return Response(status=HTTP_400_BAD_REQUEST, data=Translation.operation_priorities)
 
             # check operation between all condition in any question
             used_condition_ids = question_operations.values_list('first_condition_id', 'second_condition_id')
@@ -74,7 +74,7 @@ class PublishSurveyApiView(APIView):
                 unique_used_condition_ids.add(i)
                 unique_used_condition_ids.add(j)
             if question_condition.exclude(id__in=unique_used_condition_ids).exists():
-                return Response(status=HTTP_400_BAD_REQUEST, data="check operation between all condition")
+                return Response(status=HTTP_400_BAD_REQUEST, data=Translation.operation_between_condition)
 
         survey.status = Survey.StatusType.publish
         survey.save()
